@@ -1,6 +1,6 @@
 ---
 layout: post
-title:  "Welcome to Jekyll!"
+title:  "Computer Graphics Scene"
 date:   2026-02-04 14:09:22 +0100
 categories: jekyll update
 ---
