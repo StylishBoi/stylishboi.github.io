@@ -26,15 +26,14 @@ When the engine actually starts running, the Begin() function in my Scene class 
 {% highlight ruby %}
 void Begin() override {
 
+    //---SET UP FRAMEBUFFERS---
     if (gbuffer) {
       gbuffer->Initialize();
     }
-    //---SET UP FRAMEBUFFERS---
     if (hdrbloom) {
       hdrbloom->SetShareBuffer(gbuffer->GetShareBuffer());
       hdrbloom->Initialize();
     }
-
     if (ssaorenderer) {
       ssaorenderer->SetCamera(*camera);
       ssaorenderer->SetGBufferTextures(gbuffer);
@@ -46,12 +45,13 @@ void Begin() override {
     //---SET UP OBJECTS---
     for (auto &obj : objects) {
       obj->Initialize(*camera);
-      if(obj->isInstanced){
+      if (obj->isInstanced) {
         gbuffer->bindGeometryPipeline();
         obj->SetupInstancedAttributes();
       }
     }
 
+    //---SET UP LIGHTS---
     for (auto &light : deferredlights) {
       light->Initialize(*camera);
     }
@@ -62,6 +62,8 @@ void Begin() override {
     }
 
     //---SET UP LIGHTS INFORMATIONS---
+    // Honestly the light themselves should have that information, why need a
+    // seperate vector I don't know...
     for (auto *l : deferredlights) {
       pointLights.push_back({l->getPosition(), glm::vec3(0.2f), glm::vec3(1.0f),
                              glm::vec3(1.0f), glm::vec3(1.0f, 1.0f, 1.0f), 1.0f,
@@ -72,9 +74,43 @@ void Begin() override {
 
 **Depth Pass/Shadow Mapping**
 
+Now let's get in the actual rendering of the scene, it all starts off with the depth pass which basically sets the shadows that'll be present in the scene.
+
+How it works is actually quite simple, it will recreate the scene from the perspective of the light and define where the shadows based on that view.
+
+*Side note, it is essential to set our rendering mode to GL_FRONT to render only back the side of the object as we need to the shadows to form behind the object. If we leave it at GL_BACK, it'll render the front of the object and most of the shadows will be found INSIDE the object.*
+
 **GBuffer**
 
+Our GBuffer will help with doing our deferred lighting, it'll also be essential for our post processing effects (SSAO and Bloom).
+
+Deferred lighting is a more efficient way to calculate the light present in the scene.
+Instead of doing the lighting object by object, we'll do the lighting for the whole screen with a single shader which is great in terms of performances but also for future effects that we'll want to add on top of it.
+
+However we cannot do lighting immedietaly, we'll first render our scene geometry inside the gbuffer so it'll be able to store these informations.
+
+{% highlight ruby %}
+void RenderGBufferPass(std::vector<RenderObject *> objects,
+                         glm::mat4 projection, glm::mat4 view) {
+    glBindFramebuffer(GL_FRAMEBUFFER, gBuffer);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    geometryPipeline.Bind();
+    geometryPipeline.SetMat4("projection", glm::value_ptr(projection));
+    geometryPipeline.SetMat4("view", glm::value_ptr(view));
+
+    for (auto &obj : objects) {
+      obj->RenderGBuffer(geometryPipeline);
+    }
+
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+  }
+{% endhighlight %}
+
 **SSAO**
+There's now one last step before we can add lighting and that is SSAO.
+Screen Space Ambient Occlusion (SSAO) is a technique in which we simulate the soft shadows such as contact shadows or corners.
+
 
 **Lighting Pass**
 
