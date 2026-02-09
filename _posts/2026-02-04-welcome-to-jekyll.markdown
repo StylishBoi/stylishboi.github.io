@@ -11,6 +11,80 @@ Through this post, I'll detail step by step the inner workings of my scene and t
 
 To start off, it would be a good idea to have a proper plan of the general workings of my scene before heading into the details.
 
+My scene is also particular as most of my code is subdiviced in many classes and subclasses, even the scene itself is actually a class. I'm highlighting this fact since normally, we weren't really supposed to do that and writing most of our code in the main file would have been fine.
+However silly me decided to do otherwise which heavily increased my workload and the complexicity of my scene for no real reason apart that it sounded nice to me.
+So you'll see throughout this post the many problems that came from that.
+
+**Initialization**
+
+Before my scene can even begin to render, it is essential to initialize all the tools that we'll be using throughout the scene or otherwise, they'll start off empty which simply won't work.
+
+When my renderobjects, lightbox and framebuffers are added into my scene, they are not directly initialized. It has to wait until the engine starts running to be intialized otherwise, they'll have no OpenGL framework to build themselves on.
+
+When the engine actually starts running, the Begin() function in my Scene class starts and everything gets initialized one by one with a verification each time to avoid errors but make my scene more extensible in different uses (It deeply failed to achieve that however, an effort was more).
+
+{% highlight ruby %}
+void Begin() override {
+
+    if (gbuffer) {
+      gbuffer->Initialize();
+    }
+    //---SET UP FRAMEBUFFERS---
+    if (hdrbloom) {
+      hdrbloom->SetShareBuffer(gbuffer->GetShareBuffer());
+      hdrbloom->Initialize();
+    }
+
+    if (ssaorenderer) {
+      ssaorenderer->SetCamera(*camera);
+      ssaorenderer->SetGBufferTextures(gbuffer);
+      ssaorenderer->Initialize();
+    }
+    if (depthmap) {
+      depthmap->Initialize();
+    }
+    //---SET UP OBJECTS---
+    for (auto &obj : objects) {
+      obj->Initialize(*camera);
+      if(obj->isInstanced){
+        gbuffer->bindGeometryPipeline();
+        obj->SetupInstancedAttributes();
+      }
+    }
+
+    for (auto &light : deferredlights) {
+      light->Initialize(*camera);
+    }
+
+    //---SET UP SKYBOX---
+    if (skybox) {
+      skybox->Initialize(*camera);
+    }
+
+    //---SET UP LIGHTS INFORMATIONS---
+    for (auto *l : deferredlights) {
+      pointLights.push_back({l->getPosition(), glm::vec3(0.2f), glm::vec3(1.0f),
+                             glm::vec3(1.0f), glm::vec3(1.0f, 1.0f, 1.0f), 1.0f,
+                             0.09f, 0.032f});
+    }
+  }
+{% endhighlight %}
+
+**Depth Pass/Shadow Mapping**
+
+**GBuffer**
+
+**SSAO**
+
+**Lighting Pass**
+
+**Skybox**
+
+**Lightcubes**
+
+**Bloom/Blur**
+
+
 Jekyll requires blog post files to be named according to the following format:
 
 `YEAR-MONTH-DAY-title.MARKUP`
