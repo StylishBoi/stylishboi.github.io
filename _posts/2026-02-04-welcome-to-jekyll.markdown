@@ -4,6 +4,8 @@ title:  "Computer Graphics Scene"
 date:   2026-02-04 14:09:22 +0100
 categories: jekyll update
 ---
+![FinalResult]({{ site.baseurl }}/assets/img/FinalResult.png)
+
 During the 2nd year of my Bachelors degree in Games Programming, I was tasked to make a 3D scene using the OpenGL API.
 Through this post, I'll detail step by step the inner workings of my scene and the different techniques, functionalities and concepts I've learned throughout all of it.
 
@@ -51,14 +53,14 @@ void Begin() override {
       }
     }
 
-    //---SET UP LIGHTS---
-    for (auto &light : deferredlights) {
-      light->Initialize(*camera);
-    }
-
     //---SET UP SKYBOX---
     if (skybox) {
       skybox->Initialize(*camera);
+    }
+
+    //---SET UP LIGHTS---
+    for (auto &light : deferredlights) {
+      light->Initialize(*camera);
     }
 
     //---SET UP LIGHTS INFORMATIONS---
@@ -98,6 +100,39 @@ std::vector<graphics::RenderObject *> visibleObjects;
         visibleObjects.push_back(obj);
       }
     }
+{% endhighlight %}
+{% highlight ruby %}
+bool IsAABBInFrustum(const glm::vec3& min, const glm::vec3& max) const {
+    for (const auto& plane : planes) {
+      glm::vec3 p = min;
+      glm::vec3 n = max;
+
+      // Get the positive vertex relative to the plane normal
+      if (plane.x >= 0) {
+        p.x = max.x;
+        n.x = min.x;
+      }
+      if (plane.y >= 0) {
+        p.y = max.y;
+        n.y = min.y;
+      }
+      if (plane.z >= 0) {
+        p.z = max.z;
+        n.z = min.z;
+      }
+
+      // If the negative vertex is outside, the whole AABB is outside
+      if (glm::dot(glm::vec3(plane), n) + plane.w > 0.0f) {
+        continue;
+      }
+
+      // If the positive vertex is outside, the whole AABB is outside
+      if (glm::dot(glm::vec3(plane), p) + plane.w < 0.0f) {
+        return false;
+      }
+    }
+    return true;
+  }
 {% endhighlight %}
 
 **GBuffer**
@@ -298,28 +333,51 @@ void Render() override {
   }
 {% endhighlight %}
 
-![LightingPass]({{ site.baseurl }}/assets/img/CubemapLights.png)
-
-**Lightcubes**
+![CubemapLights]({{ site.baseurl }}/assets/img/CubemapLights.png)
 
 **Bloom/Blur**
 
 For the final part of my scene, we'll have to go through a blooma after affect which will add a sense of bluriness to the lights via a ping pong blur.
 How it works is that the Bloom Render will take the our scene and increase the bluriness on the light sources, after that, it'll apply the final result on the screen.
 Also marking the last step before rendering our screen.
+*I'll just like to note that unfortunetaly, in my final scene, the bloom effect isn't present because it lead to visual bugs which I did not manage to fix in time*
+
+{% highlight ruby %}
+void PingPongBlur() {
+    horizontal = true, first_iteration = true;
+    unsigned int amount = 10;
+
+    blurPipeline.Bind();
+
+    for (unsigned int i = 0; i < amount; i++) {
+      glBindFramebuffer(GL_FRAMEBUFFER, pingpongFBO[horizontal]);
+      blurPipeline.SetInt("horizontal", horizontal);
+      glBindTexture(
+          GL_TEXTURE_2D,
+          first_iteration
+              ? hdrColorBuffer[1]
+              : pingpongColorbuffers[!horizontal]);
+
+      vertexInput.Bind();
+      glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+
+      horizontal = !horizontal;
+      if (first_iteration)
+        first_iteration = false;
+    }
+  }
+{% endhighlight %}
+
+![Preblur]({{ site.baseurl }}/assets/img/Preblur.png)
+![Afterblur]({{ site.baseurl }}/assets/img/Afterblur.png)
 
 **Conclusion**
 
 Creating this scene has opened my eyes to a whole other spectrum of programming which I knew pratically nothing about.
 
-It was simultaneously a really interesting and deeply frustrating experience which challenged a lot of my notions in debugging and architercural design. Would have this been infinitely easier if I didn't attempt to make a barebone engine instead of just a hard-coded scene ? Yes, definitely, it ended up costing me many long hours of work trying to sort out this system I had set up. However, it also taught me a lot about 
+It was simultaneously a really interesting and deeply frustrating experience which challenged a lot of my notions in debugging and architercural design. Would have this been infinitely easier if I didn't attempt to make a barebone engine instead of just a hard-coded scene ? Yes, definitely, it ended up costing me many long hours of work trying to sort out this system I had set up. It might also be the reason that my bloom effect isn't present however my debugging skills definitely got better after all this.
 
 Would I be interested in looking further in computer graphics after this ? Undoubtedly, even if I'm not sure to understand everything yet, it is fascinating work that I'll try bettering myself in the future.
-
-{% assign image_files = site.static_files | where: "image", true %}
-{% for myimage in image_files %}
-  {{ myimage.path }}
-{% endfor %}
 
 [jekyll-docs]: https://jekyllrb.com/docs/home
 [jekyll-gh]:   https://github.com/jekyll/jekyll
