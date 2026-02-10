@@ -15,7 +15,9 @@ To start off, it would be a good idea to have a proper plan of the general worki
 
 My scene will be executed in this order :
 - Intiliazation
+
 (Render Loop)
+
 - Shadow Mapping
 - Frustum Culling
 - GBuffer
