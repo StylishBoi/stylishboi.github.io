@@ -80,7 +80,7 @@ How it works is actually quite simple, it will recreate the scene from the persp
 
 *Side note, it is essential to set my rendering mode to `GL_FRONT` to render only back the side of the object as we need to the shadows to form behind the object. If we leave it at `GL_BACK`, it'll render the front of the object and most of the shadows will be found INSIDE the object.*
 
-![DepthPass](/assets/_images/DepthMapRender.png)
+![DepthPassRender]({{ site.baseurl }}/assets/img/depthpass.png)
 
 **Frustum Culling**
 
@@ -165,7 +165,7 @@ void RenderSSAO() {
   }
 {% endhighlight %}
 
-![SSAOwithoutBlur](\assets\_images\SSAORender.png)
+![SSAORender]({{ site.baseurl }}/assets/img/SSAO.png)
 
 Then with these shadows, we'll add a blur on them to avoid blockiness that could be present on them.
 {% highlight ruby %}
@@ -308,6 +308,11 @@ Creating this scene has opened my eyes to a whole other spectrum of programming 
 It was simultaneously a really interesting and deeply frustrating experience which challenged a lot of my notions in debugging and architercural design. Would have this been infinitely easier if I didn't attempt to make a barebone engine instead of just a hard-coded scene ? Yes, definitely, it ended up costing me many long hours of work trying to sort out this system I had set up. However, it also taught me a lot about 
 
 Would I be interested in looking further in computer graphics after this ? Undoubtedly, even if I'm not sure to understand everything yet, it is fascinating work that I'll try bettering myself in the future.
+
+{% assign image_files = site.static_files | where: "image", true %}
+{% for myimage in image_files %}
+  {{ myimage.path }}
+{% endfor %}
 
 [jekyll-docs]: https://jekyllrb.com/docs/home
 [jekyll-gh]:   https://github.com/jekyll/jekyll
