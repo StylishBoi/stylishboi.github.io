@@ -78,16 +78,16 @@ Now let's get in the actual rendering of the scene, it all starts off with the d
 
 How it works is actually quite simple, it will recreate the scene from the perspective of the light and define where the shadows based on that view.
 
-*Side note, it is essential to set our rendering mode to GL_FRONT to render only back the side of the object as we need to the shadows to form behind the object. If we leave it at GL_BACK, it'll render the front of the object and most of the shadows will be found INSIDE the object.*
+*Side note, it is essential to set my rendering mode to GL_FRONT to render only back the side of the object as we need to the shadows to form behind the object. If we leave it at GL_BACK, it'll render the front of the object and most of the shadows will be found INSIDE the object.*
 
 **GBuffer**
 
-Our GBuffer will help with doing our deferred lighting, it'll also be essential for our post processing effects (SSAO and Bloom).
+My GBuffer will help with doing my deferred lighting, it'll also be essential for my post processing effects (SSAO and Bloom).
 
 Deferred lighting is a more efficient way to calculate the light present in the scene.
 Instead of doing the lighting object by object, we'll do the lighting for the whole screen with a single shader which is great in terms of performances but also for future effects that we'll want to add on top of it.
 
-However we cannot do lighting immedietaly, we'll first render our scene geometry inside the gbuffer so it'll be able to store these informations.
+However we cannot do lighting immedietaly, we'll first render my scene geometry inside the gbuffer so it'll be able to store these informations.
 
 {% highlight ruby %}
 void RenderGBufferPass(std::vector<RenderObject *> objects,
@@ -108,18 +108,172 @@ void RenderGBufferPass(std::vector<RenderObject *> objects,
 {% endhighlight %}
 
 **SSAO**
+
 There's now one last step before we can add lighting and that is SSAO.
 Screen Space Ambient Occlusion (SSAO) is a technique in which we simulate the soft shadows such as contact shadows or corners.
 
+In my code, there's two passes for it.
+First, we add on the scene where the soft should be present.
+{% highlight ruby %}
+void RenderSSAO() {
+    glBindFramebuffer(GL_FRAMEBUFFER, ssaoFramebuffer);
+    glClear(GL_COLOR_BUFFER_BIT);
+
+    pipeline.Bind();
+    pipeline.SetInt("gPosition", 0);
+    pipeline.SetInt("gNormal", 1);
+    pipeline.SetInt("texNoise", 2);
+
+    for (unsigned int i = 0; i < 64; ++i) {
+      pipeline.SetVec3("samples[" + std::to_string(i) + "]", ssaoKernel[i]);
+    }
+    pipeline.SetMat4("projection", glm::value_ptr(camera->GetProjection()));
+    pipeline.SetMat4("view", glm::value_ptr(camera->GetViewMatrix()));
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, main_gPosition);
+
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_2D, main_gNormal);
+
+    glActiveTexture(GL_TEXTURE2);
+    glBindTexture(GL_TEXTURE_2D, noiseTexture);
+
+    vertexInput.Bind();
+    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+  }
+{% endhighlight %}
+
+Then with these shadows, we'll add a blur on them to avoid blockiness that could be present on them.
+{% highlight ruby %}
+void RenderSSAO() {
+    glBindFramebuffer(GL_FRAMEBUFFER, ssaoFramebuffer);
+    glClear(GL_COLOR_BUFFER_BIT);
+
+    pipeline.Bind();
+    pipeline.SetInt("gPosition", 0);
+    pipeline.SetInt("gNormal", 1);
+    pipeline.SetInt("texNoise", 2);
+
+    for (unsigned int i = 0; i < 64; ++i) {
+      pipeline.SetVec3("samples[" + std::to_string(i) + "]", ssaoKernel[i]);
+    }
+    pipeline.SetMat4("projection", glm::value_ptr(camera->GetProjection()));
+    pipeline.SetMat4("view", glm::value_ptr(camera->GetViewMatrix()));
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, main_gPosition);
+
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_2D, main_gNormal);
+
+    glActiveTexture(GL_TEXTURE2);
+    glBindTexture(GL_TEXTURE_2D, noiseTexture);
+
+    vertexInput.Bind();
+    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+  }
+{% endhighlight %}
 
 **Lighting Pass**
 
+Now that we have shadows, lighting and SSAO, we can finally all put it together to render my scene.
+
+In my GBuffer again, we'll go through the LightingPass function and use the informations gotten from the DepthPass and SSAO to apply it on the final result. 
+
+{% highlight ruby %}
+void LightingPass(std::vector<PointLight> pointLights,
+                    const glm::vec3 &viewPos, HDRBloom *hdrbloom,
+                    GLuint ssaotexture, GLuint shadowMap,
+                    const glm::mat4 &lightSpaceMatrix) {
+
+    if (hdrbloom) {
+      hdrbloom->BindForLighting();
+      glClear(GL_COLOR_BUFFER_BIT);
+    } else {
+      glBindFramebuffer(GL_FRAMEBUFFER, 0);
+      glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    }
+
+    lightingPipeline.Bind();
+    vertexInput.Bind();
+
+    lightingPipeline.SetInt("gPosition", 0);
+    lightingPipeline.SetInt("gNormal", 1);
+    lightingPipeline.SetInt("gAlbedoSpec", 2);
+    lightingPipeline.SetInt("ssao", 3);
+
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, gPosition);
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_2D, gNormal);
+    glActiveTexture(GL_TEXTURE2);
+    glBindTexture(GL_TEXTURE_2D, gAlbedoSpec);
+    glActiveTexture(GL_TEXTURE3);
+    glBindTexture(GL_TEXTURE_2D, ssaotexture);
+
+    lightingPipeline.SetInt("shadowMap", 5);
+    glActiveTexture(GL_TEXTURE5);
+    glBindTexture(GL_TEXTURE_2D, shadowMap);
+
+    lightingPipeline.SetMat4("lightSpaceMatrix",
+                             glm::value_ptr(lightSpaceMatrix));
+
+    for (unsigned int i = 0; i < pointLights.size(); i++) {
+      lightingPipeline.SetVec3("lights[" + std::to_string(i) + "].Position",
+                               pointLights[i].position);
+      lightingPipeline.SetVec3("lights[" + std::to_string(i) + "].Color",
+                               pointLights[i].color);
+      // update attenuation parameters and calculate radius
+      const float constant = 1.0f;
+      const float linear = 0.07f;
+      const float quadratic = 0.3f;
+      lightingPipeline.SetFloat(
+          ("lights[" + std::to_string(i) + "].Linear").c_str(), linear);
+      lightingPipeline.SetFloat(
+          ("lights[" + std::to_string(i) + "].Quadratic").c_str(), quadratic);
+      // then calculate radius of light volume/sphere
+      const float maxBrightness =
+          std::fmaxf(std::fmaxf(pointLights[i].color.r, pointLights[i].color.g),
+                     pointLights[i].color.b);
+      float radius =
+          (-linear +
+           std::sqrt(linear * linear -
+                     4 * quadratic *
+                         (constant - (256.0f / 1.0f) * maxBrightness))) /
+          (2.0f * quadratic);
+      lightingPipeline.SetFloat(
+          ("lights[" + std::to_string(i) + "].Radius").c_str(), radius);
+    }
+    lightingPipeline.SetVec3("viewPos", viewPos);
+
+    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, gBuffer);
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0); // write to default gbuffer
+    glBlitFramebuffer(0, 0, common::GetWindowSize().x,
+                      common::GetWindowSize().y, 0, 0,
+                      common::GetWindowSize().x, common::GetWindowSize().y,
+                      GL_DEPTH_BUFFER_BIT, GL_NEAREST);
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+  }
+{% endhighlight %}
+
 **Skybox**
+
+The skybox will be rendered after the lighting pass as it is not really supposed to be affected by lighting in my case.
 
 **Lightcubes**
 
+The same thing is also true for my lightcubes, as they're a visual representation for my lighting sources, they aren't affected by shadows however their presence is still important for the final step of my program.
+
 **Bloom/Blur**
 
+For the final part of my scene, we'll have to go through a blooma after affect which will add a sense of bluriness to the lights via a ping pong blur.
+How it works is that the Bloom Render will take the our scene and increase the bluriness on the light sources, after that, it'll apply the final result on the screen.
+Also marking the last step before rendering our screen.
 
 Jekyll requires blog post files to be named according to the following format:
 
