@@ -80,6 +80,26 @@ How it works is actually quite simple, it will recreate the scene from the persp
 
 *Side note, it is essential to set my rendering mode to `GL_FRONT` to render only back the side of the object as we need to the shadows to form behind the object. If we leave it at `GL_BACK`, it'll render the front of the object and most of the shadows will be found INSIDE the object.*
 
+![DepthPass](/_images/DepthMapRender.png)
+
+**Frustum Culling**
+
+Before we render the objects in the scene, it's important to know which objects are going to be rendered.
+Frustum culling helps with that by determing which objects are present in the camera frame, allowing us to only draw them and ignore the ones we don't see.
+
+We'll update each object volumes and see if they are visible or not.
+If they are visible, they will be added in the `visibleObjects` vector to be drawn later.
+{% highlight ruby %}
+std::vector<graphics::RenderObject *> visibleObjects;
+    visibleObjects.clear();
+    for (auto &obj : objects) {
+      obj->UpdateBoundingVolumes();
+      if (obj->IsVisible(frustum)) {
+        visibleObjects.push_back(obj);
+      }
+    }
+{% endhighlight %}
+
 **GBuffer**
 
 My GBuffer will help with doing my deferred lighting, it'll also be essential for my post processing effects (SSAO and Bloom).
@@ -113,7 +133,7 @@ There's now one last step before we can add lighting and that is SSAO.
 Screen Space Ambient Occlusion (SSAO) is a technique in which we simulate the soft shadows such as contact shadows or corners.
 
 In my code, there's two passes for it.
-First, we add on the scene where the soft should be present.
+First, we determine on the scene where the soft shadows should be present with the help of the shader.
 {% highlight ruby %}
 void RenderSSAO() {
     glBindFramebuffer(GL_FRAMEBUFFER, ssaoFramebuffer);
@@ -246,9 +266,28 @@ void LightingPass(std::vector<PointLight> pointLights,
   }
 {% endhighlight %}
 
-**Skybox**
+**Cubemap**
 
-The skybox will be rendered after the lighting pass as it is not really supposed to be affected by lighting in my case.
+The skybox/cubemap will be rendered after the lighting pass as it is not supposed to be affected by lighting in my case.
+{% highlight ruby %}
+void Render() override {
+    glDepthFunc(GL_LEQUAL);
+
+    pipeline.Bind();
+
+    glm::mat4 view = glm::mat4(glm::mat3(camera->GetViewMatrix()));
+    pipeline.SetMat4("view", glm::value_ptr(view));
+    pipeline.SetMat4("projection", glm::value_ptr(camera->GetProjection()));
+
+    vertexInput.Bind();
+
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, cubemapTexture);
+    glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, nullptr);
+
+    glDepthFunc(GL_LESS);
+  }
+{% endhighlight %}
 
 **Lightcubes**
 
