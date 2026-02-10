@@ -1,10 +1,10 @@
 ---
 layout: post
 title:  "Computer Graphics Scene"
-date:   2026-02-04 14:09:22 +0100
+date:   2026-02-10 14:09:22 +0100
 categories: jekyll update
 ---
-![FinalResult]({{ site.baseurl }}/assets/img/FinalResult.png)
+![FinalResult]({{ site.baseurl }}/assets/img/ResultScene.png)
 
 During the 2nd year of my Bachelors degree in Games Programming, I was tasked to make a 3D scene using the OpenGL API.
 Through this post, I'll detail step by step the inner workings of my scene and the different techniques, functionalities and concepts I've learned throughout all of it.
@@ -12,6 +12,18 @@ Through this post, I'll detail step by step the inner workings of my scene and t
 **Overview**
 
 To start off, it would be a good idea to have a proper plan of the general workings of my scene before heading into the details.
+
+My scene will be executed in this order :
+- Intiliazation
+(Render Loop)
+- Shadow Mapping
+- Frustum Culling
+- GBuffer
+- SSAO
+- Lighting Pass
+- Skybox
+- Lightcubes
+- Bloom/Blur
 
 My scene is also particular as most of my code is subdiviced in many classes and subclasses, even the scene itself is actually a class. I'm highlighting this fact since normally, we weren't really supposed to do that and writing most of our code in the main file would have been fine.
 However silly me decided to do otherwise which heavily increased my workload and the complexicity of my scene for no real reason apart that it sounded nice to me.
@@ -369,15 +381,16 @@ void PingPongBlur() {
 {% endhighlight %}
 
 ![Preblur]({{ site.baseurl }}/assets/img/Preblur.png)
-![Afterblur]({{ site.baseurl }}/assets/img/Afterblur.png)
+![Afterblur]({{ site.baseurl }}/assets/img/AfterBlur.png)
 
 **Conclusion**
 
 Creating this scene has opened my eyes to a whole other spectrum of programming which I knew pratically nothing about.
 
 It was simultaneously a really interesting and deeply frustrating experience which challenged a lot of my notions in debugging and architercural design. Would have this been infinitely easier if I didn't attempt to make a barebone engine instead of just a hard-coded scene ? Yes, definitely, it ended up costing me many long hours of work trying to sort out this system I had set up. It might also be the reason that my bloom effect isn't present however my debugging skills definitely got better after all this.
+And I also would like to add that I'm proud of the amount of work I did, I don't think I ever worked as hard on something before. But it doesn't mean I'm proud of the finished product, I can name many issues present on my scene which I'm fully aware of and that I'm ashamed I wasn't able to finish in time.
 
-Would I be interested in looking further in computer graphics after this ? Undoubtedly, even if I'm not sure to understand everything yet, it is fascinating work that I'll try bettering myself in the future.
+But would I be interested in looking further in computer graphics after this ? Undoubtedly, even if I'm not sure to understand everything yet, it is fascinating work that I'll try bettering myself in the future.
 
 [jekyll-docs]: https://jekyllrb.com/docs/home
 [jekyll-gh]:   https://github.com/jekyll/jekyll
