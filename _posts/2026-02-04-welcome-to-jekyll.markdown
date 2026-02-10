@@ -165,7 +165,7 @@ void RenderSSAO() {
   }
 {% endhighlight %}
 
-![SSAORender]({{ site.baseurl }}/assets/img/SSAO.png)
+![SSAORender]({{ site.baseurl }}/assets/img/SSAOnoblur.png)
 
 Then with these shadows, we'll add a blur on them to avoid blockiness that could be present on them.
 {% highlight ruby %}
@@ -272,9 +272,12 @@ void LightingPass(std::vector<PointLight> pointLights,
 
 ![LightingPass]({{ site.baseurl }}/assets/img/LightingPass.png)
 
-**Cubemap**
+**Cubemap & Lightcubes**
 
 The skybox/cubemap will be rendered after the lighting pass as it is not supposed to be affected by lighting in my case.
+
+The same thing is also true for my lightcubes, as they're a visual representation for my lighting sources, they aren't affected by shadows however their presence is still important for the final step of my program.
+
 {% highlight ruby %}
 void Render() override {
     glDepthFunc(GL_LEQUAL);
@@ -295,9 +298,9 @@ void Render() override {
   }
 {% endhighlight %}
 
-**Lightcubes**
+![LightingPass]({{ site.baseurl }}/assets/img/CubemapLights.png)
 
-The same thing is also true for my lightcubes, as they're a visual representation for my lighting sources, they aren't affected by shadows however their presence is still important for the final step of my program.
+**Lightcubes**
 
 **Bloom/Blur**
 
