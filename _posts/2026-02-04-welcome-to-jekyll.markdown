@@ -147,28 +147,13 @@ void RenderSSAO() {
 
 Then with these shadows, we'll add a blur on them to avoid blockiness that could be present on them.
 {% highlight ruby %}
-void RenderSSAO() {
-    glBindFramebuffer(GL_FRAMEBUFFER, ssaoFramebuffer);
+void RenderSSAOBlur() {
+    glBindFramebuffer(GL_FRAMEBUFFER, ssaoBlurFramebuffer);
     glClear(GL_COLOR_BUFFER_BIT);
+    ssaoBlurPipeline.Bind();
 
-    pipeline.Bind();
-    pipeline.SetInt("gPosition", 0);
-    pipeline.SetInt("gNormal", 1);
-    pipeline.SetInt("texNoise", 2);
-
-    for (unsigned int i = 0; i < 64; ++i) {
-      pipeline.SetVec3("samples[" + std::to_string(i) + "]", ssaoKernel[i]);
-    }
-    pipeline.SetMat4("projection", glm::value_ptr(camera->GetProjection()));
-    pipeline.SetMat4("view", glm::value_ptr(camera->GetViewMatrix()));
     glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, main_gPosition);
-
-    glActiveTexture(GL_TEXTURE1);
-    glBindTexture(GL_TEXTURE_2D, main_gNormal);
-
-    glActiveTexture(GL_TEXTURE2);
-    glBindTexture(GL_TEXTURE_2D, noiseTexture);
+    glBindTexture(GL_TEXTURE_2D, ssaoColorBuffer);
 
     vertexInput.Bind();
     glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
