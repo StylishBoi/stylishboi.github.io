@@ -21,7 +21,7 @@ Before my scene can even begin to render, it is essential to initialize all the 
 
 When my renderobjects, lightbox and framebuffers are added into my scene, they are not directly initialized. It has to wait until the engine starts running to be intialized otherwise, they'll have no OpenGL framework to build themselves on.
 
-When the engine actually starts running, the Begin() function in my Scene class starts and everything gets initialized one by one with a verification each time to avoid errors but make my scene more extensible in different uses (It deeply failed to achieve that however, an effort was more).
+When the engine actually starts running, the `Begin()` function in my Scene class starts and everything gets initialized one by one with a verification each time to avoid errors but make my scene more extensible in different uses (It deeply failed to achieve that however, an effort was more).
 
 {% highlight ruby %}
 void Begin() override {
@@ -78,7 +78,7 @@ Now let's get in the actual rendering of the scene, it all starts off with the d
 
 How it works is actually quite simple, it will recreate the scene from the perspective of the light and define where the shadows based on that view.
 
-*Side note, it is essential to set my rendering mode to GL_FRONT to render only back the side of the object as we need to the shadows to form behind the object. If we leave it at GL_BACK, it'll render the front of the object and most of the shadows will be found INSIDE the object.*
+*Side note, it is essential to set my rendering mode to `GL_FRONT` to render only back the side of the object as we need to the shadows to form behind the object. If we leave it at `GL_BACK`, it'll render the front of the object and most of the shadows will be found INSIDE the object.*
 
 **GBuffer**
 
@@ -274,24 +274,6 @@ The same thing is also true for my lightcubes, as they're a visual representatio
 For the final part of my scene, we'll have to go through a blooma after affect which will add a sense of bluriness to the lights via a ping pong blur.
 How it works is that the Bloom Render will take the our scene and increase the bluriness on the light sources, after that, it'll apply the final result on the screen.
 Also marking the last step before rendering our screen.
-
-Jekyll requires blog post files to be named according to the following format:
-
-`YEAR-MONTH-DAY-title.MARKUP`
-
-Where `YEAR` is a four-digit number, `MONTH` and `DAY` are both two-digit numbers, and `MARKUP` is the file extension representing the format used in the file. After that, include the necessary front matter. Take a look at the source for this post to get an idea about how it works.
-
-Jekyll also offers powerful support for code snippets:
-
-{% highlight ruby %}
-def print_hi(name)
-  puts "Hi, #{name}"
-end
-print_hi('Tom')
-#=> prints 'Hi, Tom' to STDOUT.
-{% endhighlight %}
-
-Check out the [Jekyll docs][jekyll-docs] for more info on how to get the most out of Jekyll. File all bugs/feature requests at [Jekyll’s GitHub repo][jekyll-gh]. If you have questions, you can ask them on [Jekyll Talk][jekyll-talk].
 
 **Conclusion**
 
