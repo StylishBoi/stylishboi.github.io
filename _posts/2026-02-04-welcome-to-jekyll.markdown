@@ -80,7 +80,7 @@ How it works is actually quite simple, it will recreate the scene from the persp
 
 *Side note, it is essential to set my rendering mode to `GL_FRONT` to render only back the side of the object as we need to the shadows to form behind the object. If we leave it at `GL_BACK`, it'll render the front of the object and most of the shadows will be found INSIDE the object.*
 
-![DepthPassRender]({{ site.baseurl }}/assets/img/depthpass.png)
+![DepthPass]({{ site.baseurl }}/assets/img/DepthPass.png)
 
 **Frustum Culling**
 
@@ -184,6 +184,8 @@ void RenderSSAOBlur() {
   }
 {% endhighlight %}
 
+![SSAOBlur]({{ site.baseurl }}/assets/img/SSAOBlur.png)
+
 **Lighting Pass**
 
 Now that we have shadows, lighting and SSAO, we can finally all put it together to render my scene.
@@ -267,6 +269,8 @@ void LightingPass(std::vector<PointLight> pointLights,
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
   }
 {% endhighlight %}
+
+![LightingPass]({{ site.baseurl }}/assets/img/LightingPass.png)
 
 **Cubemap**
 
