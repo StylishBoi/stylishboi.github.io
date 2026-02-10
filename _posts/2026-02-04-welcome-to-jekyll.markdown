@@ -80,7 +80,7 @@ How it works is actually quite simple, it will recreate the scene from the persp
 
 *Side note, it is essential to set my rendering mode to `GL_FRONT` to render only back the side of the object as we need to the shadows to form behind the object. If we leave it at `GL_BACK`, it'll render the front of the object and most of the shadows will be found INSIDE the object.*
 
-![DepthPass](\assets\_images\DepthMapRender.png)
+![DepthPass](/assets/_images/DepthMapRender.png)
 
 **Frustum Culling**
 
